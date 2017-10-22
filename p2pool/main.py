@@ -83,12 +83,6 @@ def main(args, net, datadir_path, merged_urls, worker_endpoint):
         else:
             address = None
 
-        if address is not None:
-                res = yield deferral.retry('Error validating cached address:', 5)(lambda: bitcoind.rpc_validateaddress(address))()
-                if not res['isvalid'] or not res['ismine']:
-                    print '    Cached address is either invalid or not controlled by local bitcoind!'
-                    address = None
-
         if address is None:
             print '    Getting payout address from bitcoind...'
             address = yield deferral.retry('Error getting payout address from bitcoind:', 5)(lambda: bitcoind.rpc_getnewaddress('p2pool'))()
@@ -96,14 +90,19 @@ def main(args, net, datadir_path, merged_urls, worker_endpoint):
             with open(payout_path, 'wb') as f:
                 f.write(address)
 
+        if address is not None:
+                res = yield deferral.retry('Error validating address:', 5)(lambda: bitcoind.rpc_validateaddress(address))()
+                if not res['isvalid'] or not res['ismine']:
+                    print '    Address is either invalid or not controlled by local bitcoind!'
+                    raise AssertionError()
+		pubkey = res['pubkey']
 
-	pubkey = bin_to_hex(bitcoin_data.base58_decode(address))
-	# Take off leading letter, trailing checksum
-	pubkey = pubkey[2:-8]
-
+        print "Address: %s" % address
+        print "pubkey(%s): %s" % (len(pubkey), pubkey)
         my_pubkey = pubkey.decode('hex')
 
         address = bitcoin_data.pubkey_to_address(my_pubkey, net.PARENT)
+        print "Address: %s" % address
 
         my_pubkey_hash = bitcoin_data.address_to_pubkey_hash(address, net.PARENT)
         print '    ...success! Payout address:', bitcoin_data.pubkey_hash_to_address(my_pubkey_hash, net.PARENT)
