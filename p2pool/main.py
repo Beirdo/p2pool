@@ -10,6 +10,7 @@ import time
 import signal
 import traceback
 import urlparse
+import binascii
 
 if '--iocp' in sys.argv:
     from twisted.internet import iocpreactor
@@ -24,6 +25,10 @@ from bitcoin import stratum, worker_interface, helper
 from util import fixargparse, jsonrpc, variable, deferral, math, logging, switchprotocol
 from . import networks, web, work
 import p2pool, p2pool.data as p2pool_data, p2pool.node as p2pool_node
+
+
+def bin_to_hex(string):
+    return binascii.b2a_hex(string).decode('utf-8')
 
 @defer.inlineCallbacks
 def main(args, net, datadir_path, merged_urls, worker_endpoint):
@@ -69,27 +74,32 @@ def main(args, net, datadir_path, merged_urls, worker_endpoint):
             factory = yield connect_p2p()
         
         print 'Determining payout address...'
-        pubkey_path = os.path.join(datadir_path, 'cached_payout_pubkey')
+        payout_path = os.path.join(datadir_path, 'cached_payout_address')
         
-        if os.path.exists(pubkey_path):
-            with open(pubkey_path, 'rb') as f:
-                pubkey = f.read().strip('\r\n')
-            print '    Loaded cached pubkey, payout address: %s...' % (bitcoin_data.pubkey_to_address(pubkey.decode('hex'), net.PARENT),)
+        if os.path.exists(payout_path):
+            with open(payout_path, 'rb') as f:
+                address = f.read().strip('\r\n')
+            print '    Loaded cached address, payout address: %s...' % address
         else:
-            pubkey = None
+            address = None
 
-        if pubkey is not None:
-                res = yield deferral.retry('Error validating cached pubkey:', 5)(lambda: bitcoind.rpc_validatepubkey(pubkey))()
+        if address is not None:
+                res = yield deferral.retry('Error validating cached address:', 5)(lambda: bitcoind.rpc_validateaddress(address))()
                 if not res['isvalid'] or not res['ismine']:
-                    print '    Cached pubkey is either invalid or not controlled by local bitcoind!'
+                    print '    Cached address is either invalid or not controlled by local bitcoind!'
                     address = None
 
-        if pubkey is None:
-            print '    Getting payout pubkey from bitcoind...'
-            pubkey = yield deferral.retry('Error getting payout pubkey from bitcoind:', 5)(lambda: bitcoind.rpc_getnewpubkey('p2pool'))()
+        if address is None:
+            print '    Getting payout address from bitcoind...'
+            address = yield deferral.retry('Error getting payout address from bitcoind:', 5)(lambda: bitcoind.rpc_getnewaddress('p2pool'))()
             
-            with open(pubkey_path, 'wb') as f:
-                f.write(pubkey)
+            with open(payout_path, 'wb') as f:
+                f.write(address)
+
+
+	pubkey = bin_to_hex(bitcoin_data.base58_decode(address))
+	# Take off leading letter, trailing checksum
+	pubkey = pubkey[2:-8]
 
         my_pubkey = pubkey.decode('hex')
 
