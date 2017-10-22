@@ -27,43 +27,43 @@ def get_subsidy(nCap, nMaxSubsidy, bnTarget):
     return int(nSubsidy * 1000000)
 
 nets = dict(
-    novacoin=math.Object(
-        P2P_PREFIX='e4e8e9e5'.decode('hex'),
-        P2P_PORT=7777,
-        ADDRESS_VERSION=8,
-        RPC_PORT=8344,
+    MudCoin=math.Object(
+        P2P_PREFIX='e8e9e6e5'.decode('hex'),
+        P2P_PORT=8462,
+        ADDRESS_VERSION=50,
+        RPC_PORT=18462,
         RPC_CHECK=defer.inlineCallbacks(lambda bitcoind: defer.returnValue(
-            'novacoinaddress' in (yield bitcoind.rpc_help()) and
+            'mudcoinaddress' in (yield bitcoind.rpc_help()) and
             not (yield bitcoind.rpc_getinfo())['testnet']
         )),
-        SUBSIDY_FUNC=lambda target: get_subsidy(6, 100, target),
-        BLOCKHASH_FUNC=lambda data: pack.IntType(256).unpack(__import__('ltc_scrypt').getPoWHash(data)),
-        POW_FUNC=lambda data: pack.IntType(256).unpack(__import__('ltc_scrypt').getPoWHash(data)),
-        BLOCK_PERIOD=600, # s
-        SYMBOL='NVC',
-        CONF_FILE_FUNC=lambda: os.path.join(os.path.join(os.environ['APPDATA'], 'NovaCoin') if platform.system() == 'Windows' else os.path.expanduser('~/Library/Application Support/NovaCoin/') if platform.system() == 'Darwin' else os.path.expanduser('~/.novacoin'), 'novacoin.conf'),
+        SUBSIDY_FUNC=lambda target: get_subsidy(4, 50, target),
+        BLOCKHASH_FUNC=data.hash256,
+        POW_FUNC=data.hash256,
+        BLOCK_PERIOD=60, # s
+        SYMBOL='MUD',
+        CONF_FILE_FUNC=lambda: os.path.join(os.path.join(os.environ['APPDATA'], 'MudCoin') if platform.system() == 'Windows' else os.path.expanduser('~/Library/Application Support/MudCoin/') if platform.system() == 'Darwin' else os.path.expanduser('~/.MudCoin'), 'MudCoin.conf'),
         BLOCK_EXPLORER_URL_PREFIX='http://novacoin.ru/block/',
         ADDRESS_EXPLORER_URL_PREFIX='http://novacoin.ru/address/',
         SANE_TARGET_RANGE=(2**256//2**20//1000 - 1, 2**256//2**20 - 1),
     ),
-    novacoin_testnet=math.Object(
-        P2P_PREFIX='cdf2c0ef'.decode('hex'),
-        P2P_PORT=17777,
-        ADDRESS_VERSION=111,
-        RPC_PORT=8344,
+    MudCoin_testnet=math.Object(
+        P2P_PREFIX='cbf2c0ef'.decode('hex'),
+        P2P_PORT=8562,
+        ADDRESS_VERSION=110,
+        RPC_PORT=18562,
         RPC_CHECK=defer.inlineCallbacks(lambda bitcoind: defer.returnValue(
-            'novacoinaddress' in (yield bitcoind.rpc_help()) and
+            'mudcoinaddress' in (yield bitcoind.rpc_help()) and
             (yield bitcoind.rpc_getinfo())['testnet']
         )),
-        SUBSIDY_FUNC=lambda target: get_subsidy(6, 100, target),
-        BLOCKHASH_FUNC=lambda data: pack.IntType(256).unpack(__import__('ltc_scrypt').getPoWHash(data)),
-        POW_FUNC=lambda data: pack.IntType(256).unpack(__import__('ltc_scrypt').getPoWHash(data)),
-        BLOCK_PERIOD=600, # s
-        SYMBOL='tNVC',
-        CONF_FILE_FUNC=lambda: os.path.join(os.path.join(os.environ['APPDATA'], 'NovaCoin') if platform.system() == 'Windows' else os.path.expanduser('~/Library/Application Support/NovaCoin/') if platform.system() == 'Darwin' else os.path.expanduser('~/.novacoin'), 'novacoin.conf'),
+        SUBSIDY_FUNC=lambda target: get_subsidy(4, 50, target),
+        BLOCKHASH_FUNC=data.hash256,
+        POW_FUNC=data.hash256,
+        BLOCK_PERIOD=60, # s
+        SYMBOL='tMUD',
+        CONF_FILE_FUNC=lambda: os.path.join(os.path.join(os.environ['APPDATA'], 'MudCoin') if platform.system() == 'Windows' else os.path.expanduser('~/Library/Application Support/MudCoin/') if platform.system() == 'Darwin' else os.path.expanduser('~/.MudCoin'), 'MudCoin.conf'),
         BLOCK_EXPLORER_URL_PREFIX='http://nonexistent-novacoin-testnet-explorer/block/',
         ADDRESS_EXPLORER_URL_PREFIX='http://nonexistent-novacoin-testnet-explorer/address/',
-        SANE_TARGET_RANGE=(2**256//1000000000 - 1, 2**256//1000 - 1),
+        SANE_TARGET_RANGE=(2**256//2**20//1000 - 1, 2**256//2**20 - 1),
     ),
 )
 for net_name, net in nets.iteritems():

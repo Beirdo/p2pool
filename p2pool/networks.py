@@ -8,41 +8,41 @@ from p2pool.util import math
 # changes can be done by changing one, then the other
 
 nets = dict(
-    novacoin=math.Object(
-        PARENT=networks.nets['novacoin'],
+    MudCoin=math.Object(
+        PARENT=networks.nets['MudCoin'],
         SHARE_PERIOD=30, # seconds
         CHAIN_LENGTH=24*60*60//30, # shares
         REAL_CHAIN_LENGTH=24*60*60//30, # shares
         TARGET_LOOKBEHIND=200, # shares
         SPREAD=3, # blocks
-        IDENTIFIER='e037d5b8c6923510'.decode('hex'),
-        PREFIX='7208c1a53ef649b0'.decode('hex'),
-        P2P_PORT=9777,
+        IDENTIFIER='e037d5bc69823510'.decode('hex'),
+        PREFIX='7208c1a3ef6549b0'.decode('hex'),
+        P2P_PORT=28462,
         MIN_TARGET=0,
         MAX_TARGET=2**256//2**20 - 1,
         PERSIST=True,
-        WORKER_PORT=8336,
-        BOOTSTRAP_ADDRS='188.120.239.144 81.200.245.198 85.234.62.99 81.200.241.54 217.77.220.40'.split(' '),
+        WORKER_PORT=28463,
+        BOOTSTRAP_ADDRS=['seed%s.mudcoin.mycryptocoins.net' % i for i in range(1, 6)],
         ANNOUNCE_CHANNEL='#p2pool-alt',
-        VERSION_CHECK=lambda v: v >= 60004,
+        VERSION_CHECK=lambda v: v >= 60006,
     ),
     novacoin_testnet=math.Object(
-        PARENT=networks.nets['novacoin_testnet'],
+        PARENT=networks.nets['MudCoin_testnet'],
         SHARE_PERIOD=3, # seconds
         CHAIN_LENGTH=20*60//3, # shares
         REAL_CHAIN_LENGTH=20*60//3, # shares
         TARGET_LOOKBEHIND=200, # shares
         SPREAD=12, # blocks
-        IDENTIFIER='e037d5b8c7923510'.decode('hex'),
-        PREFIX='7208c1a54ef649b0'.decode('hex'),
-        P2P_PORT=19777,
+        IDENTIFIER='e037d5bc69823510'.decode('hex'),
+        PREFIX='7208c1a3ef6549b0'.decode('hex'),
+        P2P_PORT=38462,
         MIN_TARGET=0,
         MAX_TARGET=2**256//2**20 - 1,
         PERSIST=False,
-        WORKER_PORT=18336,
-        BOOTSTRAP_ADDRS=' '.split(' '),
+        WORKER_PORT=38463,
+        BOOTSTRAP_ADDRS=['tnseed%s.mudcoin.mycryptocoins.net' % i for i in range(1, 6)],
         ANNOUNCE_CHANNEL='#p2pool-alt',
-        VERSION_CHECK=lambda v: v >= 60004,
+        VERSION_CHECK=lambda v: v >= 60006,
     ),
 )
 for net_name, net in nets.iteritems():
