@@ -52,8 +52,6 @@ def load_share(share, net, peer_addr):
     else:
         raise ValueError('unknown share type: %r' % (share['type'],))
 
-DONATION_SCRIPT = '4104ffd03de44a6e11b9917f3a29f9443283d9871c9d743ef30d5eddcd37094b64d1b3d8090496b53256786bf5c82932ec23c3b74d9f05a6f95a8b5529352656664bac'.decode('hex')
-
 class Share(object):
     VERSION = 9
     SUCCESSOR = None
@@ -108,7 +106,7 @@ class Share(object):
     ])
 
 
-    gentx_before_refhash = pack.VarStrType().pack(DONATION_SCRIPT) + pack.IntType(64).pack(minout) + pack.VarStrType().pack('\x24' + pack.IntType(256).pack(0) + pack.IntType(32).pack(0))[:2]
+    gentx_before_refhash = pack.IntType(64).pack(minout) + pack.VarStrType().pack('\x24' + pack.IntType(256).pack(0) + pack.IntType(32).pack(0))[:2]
 
     @classmethod
     def generate_transaction(cls, tracker, share_data, block_target, desired_timestamp, desired_target, ref_merkle_link, desired_other_transaction_hashes_and_fees, net, known_txs=None, last_txout_nonce=0, base_subsidy=None):
@@ -211,7 +209,7 @@ class Share(object):
         # iterate list and collect all weights, which produces less than 0.01 payout
         # it's neccessary due to NVC/PPC protocol-level limitations for coinbase outpoint size
         for x in raw_amounts.keys():
-            if raw_amounts[x] < minout and x not in [this_script, DONATION_SCRIPT]:
+            if raw_amounts[x] < minout and x != this_script:
                 total_remowed_weight = total_remowed_weight + raw_weights[x]
             else:
                 weights[x] = raw_weights[x]
@@ -228,20 +226,15 @@ class Share(object):
         amounts = dict((script, my_subsidy*weight//total_weight) for script, weight in weights.iteritems()) 
 
         # all that's left over is the donation weight and some extra satoshis due to rounding
-        amounts[DONATION_SCRIPT] = amounts.get(DONATION_SCRIPT, 0) + my_subsidy - sum(amounts.itervalues()) 
-
         if sum(amounts.itervalues()) != my_subsidy or any(x < 0 for x in amounts.itervalues()):
             raise ValueError()
-
-        # add 0.01 coin to donation, to satisfy the protocol
-        amounts[DONATION_SCRIPT] = amounts[DONATION_SCRIPT] + minout
 
         # add 0.01 to current user output, to satisfy the protocol
         amounts[this_script] = amounts.get(this_script, 0) + minout
 
 #        print amounts
 
-        dests = sorted(amounts.iterkeys(), key=lambda script: (script == DONATION_SCRIPT, amounts[script], script))[-4000:] # block length limit, unlikely to ever be hit
+        dests = sorted(amounts.iterkeys(), key=lambda script: (amounts[script], script))[-4000:] # block length limit, unlikely to ever be hit
 
 #        print dests
 
@@ -268,7 +261,7 @@ class Share(object):
                 sequence=None,
                 script=share_data['coinbase'],
             )],
-            tx_outs=[dict(value=amounts[script], script=script) for script in dests if amounts[script] or script == DONATION_SCRIPT] + [dict(
+            tx_outs=[dict(value=amounts[script], script=script) for script in dests if amounts[script]] + [dict(
                 # add 0.01 coin to service output, to satisfy the protocol
                 value=minout,
                 script='\x24' + cls.get_ref_hash(net, share_info, ref_merkle_link) + pack.IntType(32).pack(last_txout_nonce),
@@ -689,10 +682,7 @@ def get_expected_payouts(tracker, best_share_hash, block_target, subsidy, net):
 
     weights, total_weight, donation_weight = tracker.get_cumulative_weights(best_share_hash, min(tracker.get_height(best_share_hash), net.REAL_CHAIN_LENGTH), 65535*net.SPREAD*bitcoin_data.target_to_average_attempts(block_target))
 
-    #res = dict((script, subsidy*weight//total_weight) for script, weight in weights.iteritems())
-
     res = dict((script, calculate_payout(weight, total_weight, subsidy)) for script, weight in weights.iteritems())
-    res[DONATION_SCRIPT] = res.get(DONATION_SCRIPT, 0) + subsidy - sum(res.itervalues())
 
     return res
 
