@@ -19,7 +19,7 @@ minout = pow(10, 6) / 100;
 
 hash_link_type = pack.ComposedType([
     ('state', pack.FixedStrType(32)),
-    ('extra_data', pack.FixedStrType(0)), # bit of a hack, but since the donation script is at the end, const_ending is long enough to always make this empty
+    ('extra_data', pack.FixedStrType(41)), # bit of a hack, but since the donation script is at the end, const_ending is long enough to always make this empty
     ('length', pack.VarIntType()),
 ])
 
