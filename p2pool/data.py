@@ -198,45 +198,46 @@ class Share(object):
         )
 
         # calculate "raw" subsidy
-        raw_subsidy = share_data['subsidy'] - 3 * minout - get_coinbase_fee(share_data, len(raw_weights) + 1)
+        raw_subsidy = share_data['subsidy'] - 2 * minout - get_coinbase_fee(share_data, len(raw_weights) + 1)
 
         # calculate "raw" amounts
         raw_amounts = dict((script, raw_subsidy*weight//total_weight) for script, weight in raw_weights.iteritems()) 
 
-        total_remowed_weight = 0
+        total_removed_weight = 0
         weights = {}
 
         # iterate list and collect all weights, which produces less than 0.01 payout
         # it's neccessary due to NVC/PPC protocol-level limitations for coinbase outpoint size
         for x in raw_amounts.keys():
             if raw_amounts[x] < minout and x != this_script:
-                total_remowed_weight = total_remowed_weight + raw_weights[x]
+                total_removed_weight = total_removed_weight + raw_weights[x]
             else:
                 weights[x] = raw_weights[x]
 
-        total_weight = total_weight - total_remowed_weight
+        total_weight = total_weight - total_removed_weight
         assert total_weight == sum(weights.itervalues()) + donation_weight, (total_weight, sum(weights.itervalues()) + donation_weight)
 
-
         # base subsidy value calculated as:
-        # [subsidy - (0.01 for donation + 0.01 for current user + 0.01 for p2pool outpoint) - netfee]
-        my_subsidy = share_data['subsidy'] - 3 * minout - get_coinbase_fee(share_data, len(weights) + 1)
+        # [subsidy - (0.01 for current user + 0.01 for p2pool outpoint) - netfee]
+        my_subsidy = share_data['subsidy'] - 2 * minout - get_coinbase_fee(share_data, len(weights) + 1)
 
         # subsidy goes according to weights prior to this share
         amounts = dict((script, my_subsidy*weight//total_weight) for script, weight in weights.iteritems()) 
 
         # all that's left over is the donation weight and some extra satoshis due to rounding
+	amounts[this_script] = amounts.get(this_script, 0) + my_subsidy - sum(amounts.itervalues())
+
         if sum(amounts.itervalues()) != my_subsidy or any(x < 0 for x in amounts.itervalues()):
             raise ValueError()
 
         # add 0.01 to current user output, to satisfy the protocol
         amounts[this_script] = amounts.get(this_script, 0) + minout
 
-#        print amounts
+        #print amounts
 
         dests = sorted(amounts.iterkeys(), key=lambda script: (amounts[script], script))[-4000:] # block length limit, unlikely to ever be hit
 
-#        print dests
+        #print dests
 
         share_info = dict(
             share_data=share_data,
@@ -311,7 +312,7 @@ class Share(object):
         if len(self.merkle_link['branch']) > 16:
             raise ValueError('merkle branch too long!')
         
-        assert not self.hash_link['extra_data'], repr(self.hash_link['extra_data'])
+        #assert not self.hash_link['extra_data'], repr(self.hash_link['extra_data'])
         
         self.share_data = self.share_info['share_data']
         self.max_target = self.share_info['max_bits'].target
